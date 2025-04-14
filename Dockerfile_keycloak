@@ -1,0 +1,6 @@
+FROM quay.io/keycloak/keycloak:22.0.3
+EXPOSE 8888
+RUN mkdir -p /opt/keycloak/data/import
+COPY keycloak.json /opt/keycloak/data/import/
+
+ENTRYPOINT ["/bin/bash", "-c", "/opt/keycloak/bin/kc.sh start-dev --import-realm"]
