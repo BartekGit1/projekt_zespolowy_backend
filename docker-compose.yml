@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  database:
+    container_name: database
+    image: postgres:17.4
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DATABASE: database
+      POSTGRES_USER: database
+      POSTGRES_PASSWORD: database
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  keycloak:
+    container_name: keycloak
+    build:
+      context: .
+      dockerfile: Dockerfile_keycloak
+    ports:
+      - "8888:8888"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=password
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_ENABLED=true
+      - KC_PROXY=edge
+      - KC_HTTP_PORT=8888
+    command: start-dev --http-port=8888
+
+volumes:
+  db:
+    driver: local
