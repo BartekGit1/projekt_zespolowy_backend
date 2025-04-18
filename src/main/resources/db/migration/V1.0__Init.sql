@@ -25,6 +25,7 @@ CREATE TABLE auctions
     created_at     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     finished       boolean        NOT NULL,
     paid           BOOLEAN        NOT NULL DEFAULT FALSE,
+    uri            varchar(500),
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
