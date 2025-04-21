@@ -19,3 +19,10 @@ Once the containers are up and running, you can access Keycloak at:
 - **grant_type**: `password`
 - **password**: `<insert password>`
 - **username**: `<insert username>`
+
+### Swagger - API
+- HTML docs `http://localhost:8080/swagger-ui.html`
+- Postman collection: copy and import `http://localhost:8080/v3/api-docs`
+
+### Mock data in database
+- Set `app.data-initializer.enabled=true`
