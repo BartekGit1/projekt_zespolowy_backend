@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "auto_bids")
-
 public class AutoBidEntity {
 
     @Id

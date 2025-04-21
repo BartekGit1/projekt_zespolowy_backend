@@ -85,6 +85,17 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 			<version>11.7.0</version>
 		</dependency>
+		<dependency>
+			<groupId>net.datafaker</groupId>
+			<artifactId>datafaker</artifactId>
+			<version>2.4.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.38</version>
+			<scope>provided</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

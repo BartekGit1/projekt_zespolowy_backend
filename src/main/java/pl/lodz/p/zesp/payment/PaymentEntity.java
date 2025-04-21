@@ -1,11 +1,21 @@
 package pl.lodz.p.zesp.payment;
 
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import pl.lodz.p.zesp.auction.AuctionEntity;
 import pl.lodz.p.zesp.user.UserEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "payments")
+@Builder
+@Setter
+@AllArgsConstructor
+@RequiredArgsConstructor
+@ToString
 public class PaymentEntity {
 
     @Id
@@ -20,8 +30,16 @@ public class PaymentEntity {
     private BigDecimal amount;
 
     @Column(nullable = false)
-    private String status;
+    private String status = "IN_PROGRESS";
 
-    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @OneToOne(mappedBy = "payment")
+    private PremiumEntity premium;
+
+    @OneToOne(mappedBy = "payment")
+    private AuctionEntity auction;
+
 }
