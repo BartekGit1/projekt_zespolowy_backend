@@ -1,13 +1,24 @@
 package pl.lodz.p.zesp.auction;
 
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import pl.lodz.p.zesp.bid.BidEntity;
+import pl.lodz.p.zesp.payment.PaymentEntity;
 import pl.lodz.p.zesp.user.UserEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "auctions")
+@Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class AuctionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,8 +36,9 @@ public class AuctionEntity {
     @Column(name = "starting_price", nullable = false)
     private BigDecimal startingPrice;
 
-    @Column(name = "current_price", nullable = false)
-    private BigDecimal currentPrice;
+    @OneToMany(mappedBy = "auction")
+    @OrderBy("amount desc")
+    private List<BidEntity> bids = new ArrayList<>();
 
     @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
@@ -36,14 +48,21 @@ public class AuctionEntity {
     private UserEntity user;
 
     @Column(name = "is_promoted", nullable = false)
-    private boolean isPromoted;
+    private boolean isPromoted = false;
 
-    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    private boolean finished;
+    private boolean finished = false;
 
     @Column(nullable = false)
-    private boolean paid;
+    private boolean paid = false;
+
+    private String uri;
+
+    @OneToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinColumn(name = "payment_id")
+    private PaymentEntity payment;
 }

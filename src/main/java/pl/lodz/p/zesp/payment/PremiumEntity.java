@@ -1,12 +1,14 @@
 package pl.lodz.p.zesp.payment;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 import pl.lodz.p.zesp.user.UserEntity;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "premium_subscriptions")
+@Getter
 public class PremiumEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,6 +24,16 @@ public class PremiumEntity {
     @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
 
-    @Column(name = "payment_id", nullable = false)
-    private String paymentId;
+    @OneToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinColumn(name = "payment_id")
+    private PaymentEntity payment;
+
+    public PremiumEntity() {}
+
+    public PremiumEntity(UserEntity user, LocalDateTime startDate, LocalDateTime endDate, PaymentEntity payment) {
+        this.user = user;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.payment = payment;
+    }
 }

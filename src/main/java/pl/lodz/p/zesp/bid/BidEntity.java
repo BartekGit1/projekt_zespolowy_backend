@@ -1,6 +1,10 @@
 package pl.lodz.p.zesp.bid;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import pl.lodz.p.zesp.auction.AuctionEntity;
 import pl.lodz.p.zesp.user.UserEntity;
 
@@ -9,6 +13,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bids")
+@Builder
+@Getter
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class BidEntity {
 
     @Id
