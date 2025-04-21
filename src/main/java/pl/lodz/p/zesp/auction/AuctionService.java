@@ -1,17 +1,14 @@
 package pl.lodz.p.zesp.auction;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import pl.lodz.p.zesp.auction.dto.AuctionFilter;
 import pl.lodz.p.zesp.auction.dto.AuctionRequest;
 import pl.lodz.p.zesp.auction.dto.AuctionResponse;
 import pl.lodz.p.zesp.common.util.IdResponse;
 import pl.lodz.p.zesp.common.util.api.exception.NotFoundException;
-
-import java.util.List;
-
-import static org.springframework.data.domain.Sort.Order.asc;
 
 @Service
 @RequiredArgsConstructor
@@ -26,11 +23,9 @@ public class AuctionService {
                 .orElseThrow(() -> new NotFoundException("Auction not found"));
     }
 
-    List<AuctionResponse> getAuctions(final AuctionFilter filter) {
-        final var defaultSort = Sort.by(asc("finished"), asc("endDate"));
-        return auctionRepository.findAll(filter.buildSpecification(), defaultSort).stream()
-                .map(AuctionResponse::of)
-                .toList();
+    Page<AuctionResponse> getAuctions(final AuctionFilter filter, final Pageable pageable) {
+        return auctionRepository.findAll(filter.buildSpecification(), pageable)
+                .map(AuctionResponse::of);
     }
 
     IdResponse addAuction(final AuctionRequest request) {

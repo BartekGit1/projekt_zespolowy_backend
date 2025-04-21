@@ -2,8 +2,11 @@ package pl.lodz.p.zesp.auction
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 import pl.lodz.p.zesp.auction.dto.AuctionFilter
+import pl.lodz.p.zesp.auction.dto.AuctionResponse
 import pl.lodz.p.zesp.auction.dto.AuctionStatus
 import pl.lodz.p.zesp.bid.BidEntity
 import pl.lodz.p.zesp.user.AccountStatus
@@ -75,127 +78,157 @@ class AuctionServiceIntegrationTest extends Specification {
 		auctionRepository.saveAll([auction1, auction2])
 	}
 
-	def "getAuctions should filter by status ACTIVE"() {
+	def "getAuctions should filter by status ACTIVE and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().status(AuctionStatus.ACTIVE).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.title() == VINTAGE_WATCH_TITLE }
 	}
 
-	def "getAuctions should filter by status FINISHED"() {
+	def "getAuctions should filter by status FINISHED and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().status(AuctionStatus.FINISHED).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.title() == ANTIQUE_BOOK_TITLE }
 	}
 
-	def "getAuctions should filter by title"() {
+	def "getAuctions should filter by title and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().title("Vintage").build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.title() == VINTAGE_WATCH_TITLE }
 	}
 
-	def "getAuctions should filter by description"() {
+	def "getAuctions should filter by description and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().description("novel").build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.description() == FIRST_EDITION_NOVEL_DESCRIPTION }
 	}
 
-	def "getAuctions should filter by promoted = true"() {
+	def "getAuctions should filter by promoted = true and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().promoted(true).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.isPromoted() }
 	}
 
-	def "getAuctions should filter by userId"() {
+	def "getAuctions should filter by userId and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().userId(user1.getId()).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.user().id() == user1.getId() }
 	}
 
-	def "getAuctions should filter by endDateBefore"() {
+	def "getAuctions should filter by endDateBefore and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().endDateBefore(auction2.getEndDate()).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.id() == auction1.getId() }
 	}
 
-	def "getAuctions should filter by endDateAfter"() {
+	def "getAuctions should filter by endDateAfter and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().endDateAfter(auction1.getEndDate()).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.id() == auction2.getId() }
 	}
 
-	def "getAuctions should filter by minPrice"() {
+	def "getAuctions should filter by minPrice and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().minPrice(new BigDecimal("75.00")).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.startingPrice() == VINTAGE_WATCH_PRICE }
 	}
 
-	def "getAuctions should filter by maxPrice"() {
+	def "getAuctions should filter by maxPrice and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder().maxPrice(new BigDecimal("75.00")).build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.startingPrice() == ANTIQUE_BOOK_PRICE }
 	}
 
-	def "getAuctions should filter by multiple criteria"() {
+	def "getAuctions should filter by multiple criteria and return a Page of AuctionResponse"() {
 		given:
 		def filter = AuctionFilter.builder()
 				.status(AuctionStatus.ACTIVE)
@@ -205,52 +238,18 @@ class AuctionServiceIntegrationTest extends Specification {
 				.minPrice(new BigDecimal("90.00"))
 				.maxPrice(new BigDecimal("110.00"))
 				.build()
+		def pageable = PageRequest.of(0, 10)
 
 		when:
-		def result = auctionService.getAuctions(filter)
+		Page<AuctionResponse> resultPage = auctionService.getAuctions(filter, pageable)
+		def result = resultPage.getContent()
 
 		then:
+		resultPage.getTotalElements() == 1
 		result.size() == 1
 		result.any { it.title() == VINTAGE_WATCH_TITLE && it.isPromoted() && it.user().id() == user1.getId() && it.startingPrice() == VINTAGE_WATCH_PRICE }
 	}
-
-	def "getAuctions should return auctions sorted by isFinished (false first) and then by endDate ascending"() {
-		given:
-		def now = LocalDateTime.now().truncatedTo(SECONDS)
-		def auction3 = AuctionEntity.builder()
-				.title("Auction C")
-				.description("Description 2")
-				.startingPrice(new BigDecimal("30.00"))
-				.endDate(now.plusDays(1))
-				.user(user1)
-				.finished(false)
-				.bids(new ArrayList<BidEntity>())
-				.build()
-
-		def auction4 = AuctionEntity.builder()
-				.title("Auction D")
-				.description("Description 2")
-				.startingPrice(new BigDecimal("40.00"))
-				.endDate(now.plusDays(5))
-				.user(user2)
-				.finished(true)
-				.bids(new ArrayList<BidEntity>())
-				.build()
-
-		auctionRepository.saveAll([auction3, auction4])
-		def filter = AuctionFilter.builder().build()
-
-		when:
-		def result = auctionService.getAuctions(filter)
-
-		then:
-		result.size() == 4
-		result[0].id() == auction3.getId()
-		result[1].id() == auction1.getId()
-		result[2].id() == auction4.getId()
-		result[3].id() == auction2.getId()
-	}
-
+	
 	private static final String VINTAGE_WATCH_TITLE = "Vintage Watch"
 	private static final String CLASSIC_TIMEPIECE_DESCRIPTION = "Classic timepiece"
 	private static final BigDecimal VINTAGE_WATCH_PRICE = new BigDecimal("100.00")

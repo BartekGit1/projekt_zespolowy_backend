@@ -2,6 +2,8 @@ package pl.lodz.p.zesp.auction;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,8 +11,6 @@ import pl.lodz.p.zesp.auction.dto.AuctionFilter;
 import pl.lodz.p.zesp.auction.dto.AuctionRequest;
 import pl.lodz.p.zesp.auction.dto.AuctionResponse;
 import pl.lodz.p.zesp.common.util.IdResponse;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auctions")
@@ -25,8 +25,11 @@ class AuctionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AuctionResponse>> getAllAuctions(final AuctionFilter auctionFilter) {
-        return ResponseEntity.ok(auctionService.getAuctions(auctionFilter));
+    public ResponseEntity<Page<AuctionResponse>> getAllAuctions(
+            final AuctionFilter auctionFilter,
+            final Pageable pageable
+    ) {
+        return ResponseEntity.ok(auctionService.getAuctions(auctionFilter, pageable));
     }
 
     @PutMapping
