@@ -36,7 +36,7 @@ public class AuctionEntity {
     @Column(name = "starting_price", nullable = false)
     private BigDecimal startingPrice;
 
-    @OneToMany(mappedBy = "auction")
+    @OneToMany(mappedBy = "auction", fetch = FetchType.EAGER)
     @OrderBy("amount desc")
     private List<BidEntity> bids = new ArrayList<>();
 
