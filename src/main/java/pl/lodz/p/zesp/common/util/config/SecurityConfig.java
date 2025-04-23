@@ -46,22 +46,22 @@ class SecurityConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//        http.cors(Customizer.withDefaults());
-//
-//        http.csrf(AbstractHttpConfigurer::disable)
-//                .authorizeHttpRequests(authz -> authz.
-//                        requestMatchers(URI_VERSION_V1 + URI_USERS + URI_REGISTER)
-//                        .permitAll()
-//                        .requestMatchers(WHITELIST_URLS).permitAll()
-//                        .anyRequest().authenticated()
-//                )
-//                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-//                ).exceptionHandling(exceptionHandling -> exceptionHandling
-//                        .authenticationEntryPoint((request, response, ex) ->
-//                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage())
-//                        ))
-//                .oauth2ResourceServer(oauth2 -> oauth2
-//                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)));
+        http.cors(Customizer.withDefaults());
+
+        http.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authz -> authz.
+                        requestMatchers(URI_VERSION_V1 + URI_USERS + URI_REGISTER)
+                        .permitAll()
+                        .requestMatchers(WHITELIST_URLS).permitAll()
+                        .anyRequest().permitAll()
+                )
+                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                ).exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint((request, response, ex) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage())
+                        ))
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)));
         return http.build();
     }
 }

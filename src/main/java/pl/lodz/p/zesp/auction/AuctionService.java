@@ -44,7 +44,7 @@ public class AuctionService {
         auctionRepository.deleteById(auctionId);
     }
 
-    private AuctionEntity getById(final Long auctionId) {
+    public AuctionEntity getById(final Long auctionId) {
         return auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NotFoundException("Auction not found"));
     }
