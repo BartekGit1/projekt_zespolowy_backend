@@ -46,8 +46,10 @@ public class DataInitializer {
 
     private static final int USERS = 50;
     private static final int PREMIUM_SUBSCRIPTIONS = 30;
-    private static final int AUCTIONS = 100;
     private static final int WATCHLIST_ITEMS = 150;
+    private static final int PAST_AUCTIONS = 70;
+    private static final int ACTIVE_AUCTIONS = 30;
+    private static final int MAX_PAST_DAYS = 90;
 
     @PostConstruct
     @Transactional
@@ -109,69 +111,80 @@ public class DataInitializer {
         return savedAuctions;
     }
 
-    private List<AuctionEntity> createAuctions(List<UserEntity> users, List<PremiumEntity> premiumSubscriptions) {
-        final var auctions = IntStream.range(0, AUCTIONS)
-                .mapToObj(i -> {
-                    final var randomUser = users.get(random.nextInt(users.size()));
-                    final var createdAt = getRandomDateTime(90);
-                    final var endDate = createdAt.plusDays(random.nextInt(30) + 7);
-                    final var startingPrice = BigDecimal.valueOf(faker.number().randomDouble(2, 10, 100));
+    public List<AuctionEntity> createAuctions(List<UserEntity> users, List<PremiumEntity> premiumSubscriptions) {
+        final var auctions = new ArrayList<AuctionEntity>();
+        final var now = LocalDateTime.now();
+        final var warsawZone = ZoneId.of("Europe/Warsaw");
 
-                    final var isPromoted = premiumSubscriptions.stream()
-                            .anyMatch(premium -> premium.getUser().getId().equals(randomUser.getId()));
+        for (int i = 0; i < PAST_AUCTIONS; i++) {
+            final var endDate = LocalDateTime.ofInstant(faker.timeAndDate().past(MAX_PAST_DAYS, TimeUnit.DAYS), warsawZone);
+            final var createdAt = endDate.minusDays(random.nextInt(7) + 1);
+            auctions.add(createBaseAuction(users, premiumSubscriptions, endDate, createdAt));
+        }
 
-                    return AuctionEntity.builder()
-                            .version(0L)
-                            .title(faker.commerce().productName() + " " + faker.commerce().material())
-                            .description(faker.lorem().paragraph())
-                            .startingPrice(startingPrice)
-                            .endDate(endDate)
-                            .user(randomUser)
-                            .createdAt(endDate.minusDays(5))
-                            .isPromoted(isPromoted)
-                            .finished(endDate.isAfter(LocalDateTime.now()))
-                            .paid(endDate.isAfter(LocalDateTime.now()))
-                            .uri(String.format("https://picsum.photos/id/%d/600/400", random.nextInt(1000) + 1))
-                            .build();
-                })
-                .toList();
+        for (int i = 0; i < ACTIVE_AUCTIONS; i++) {
+            final var endDate = now.plusMinutes(i + 1);
+            final var createdAt = endDate.minusDays(random.nextInt(7) + 1);
+            auctions.add(createBaseAuction(users, premiumSubscriptions, endDate, createdAt));
+        }
+
         return auctionRepository.saveAll(auctions);
+    }
+
+    private AuctionEntity createBaseAuction(List<UserEntity> users, List<PremiumEntity> premiumSubscriptions, LocalDateTime endDate, LocalDateTime createdAt) {
+        final var randomUser = users.get(random.nextInt(users.size()));
+        final var startingPrice = BigDecimal.valueOf(faker.number().randomDouble(2, 10, 100));
+        final var isPromoted = premiumSubscriptions.stream()
+                .anyMatch(premium -> premium.getUser().getId().equals(randomUser.getId()));
+        final var finished = endDate.isBefore(LocalDateTime.now());
+
+        return AuctionEntity.builder()
+                .version(0L)
+                .title(faker.commerce().productName() + " " + faker.commerce().material())
+                .description(faker.lorem().paragraph())
+                .startingPrice(startingPrice)
+                .endDate(endDate)
+                .user(randomUser)
+                .createdAt(createdAt)
+                .isPromoted(isPromoted)
+                .finished(finished)
+                .paid(finished)
+                .uri(String.format("https://picsum.photos/id/%d/600/400", random.nextInt(1000) + 1))
+                .build();
     }
 
     private void createAuctionsBids(List<AuctionEntity> auctions, List<UserEntity> users) {
         final var bidsToBeSaved = new ArrayList<BidEntity>();
         auctions.forEach(auction -> {
-            final var numberOfBids = random.nextInt(10) + 1;
+            final var numberOfAdditionalBids = random.nextInt(10); // Generates 0 to 9 additional bids
+            final var totalNumberOfBids = 1 + numberOfAdditionalBids; // Ensure at least one bid
             final var auctionStart = auction.getCreatedAt();
             final var auctionEnd = auction.getEndDate();
             final var timeDifferenceMinutes = Duration.between(auctionStart, auctionEnd).toMinutes();
             final var initialAmount = auction.getStartingPrice();
             final var increment = BigDecimal.valueOf(faker.number().randomDouble(2, 1, 5));
 
-            if (timeDifferenceMinutes > numberOfBids) {
-                IntStream.range(0, numberOfBids)
-                        .forEach((i) -> {
-                            UserEntity randomUser;
-                            do {
-                                randomUser = users.get(random.nextInt(users.size()));
-                            } while (randomUser.getId().equals(auction.getUser().getId()));
-                            final var currentAmount = initialAmount.add(increment.multiply(BigDecimal.valueOf(i + 1)));
-                            final var bidTime = auctionStart.plusMinutes((i + 1) * (timeDifferenceMinutes / (numberOfBids + 1)));
+            IntStream.range(0, totalNumberOfBids)
+                    .forEach((i) -> {
+                        UserEntity randomUser;
+                        do {
+                            randomUser = users.get(random.nextInt(users.size()));
+                        } while (randomUser.getId().equals(auction.getUser().getId()));
+                        final var currentAmount = initialAmount.add(increment.multiply(BigDecimal.valueOf(i + 1)));
+                        final var bidTime = auctionStart.plusMinutes((long) ((i + 1.0) / (totalNumberOfBids + 1.0) * timeDifferenceMinutes));
 
-                            final var bid = BidEntity.builder()
-                                    .auction(auction)
-                                    .user(randomUser)
-                                    .bidTime(bidTime.isBefore(auctionEnd) ? bidTime : auctionEnd.minusMinutes(1))
-                                    .amount(currentAmount)
-                                    .build();
-                            bidsToBeSaved.add(bid);
-                            auction.getBids().add(bid);
-                        });
-            }
+                        final var bid = BidEntity.builder()
+                                .auction(auction)
+                                .user(randomUser)
+                                .bidTime(bidTime.isBefore(auctionEnd) ? bidTime : auctionEnd.minusMinutes(1))
+                                .amount(currentAmount)
+                                .build();
+                        bidsToBeSaved.add(bid);
+                        auction.getBids().add(bid);
+                    });
         });
         bidRepository.saveAll(bidsToBeSaved);
     }
-
     private void createAuctionsPayment(List<AuctionEntity> auctions) {
         auctions.stream()
                 .filter(auction -> auction.isFinished() && auction.isPaid() && !auction.getBids().isEmpty())
