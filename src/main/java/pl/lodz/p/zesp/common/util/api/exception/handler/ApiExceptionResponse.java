@@ -15,7 +15,7 @@ public class ApiExceptionResponse {
 
     public ApiExceptionResponse(final CustomHttpException exception) {
         this.status = exception.getHttpStatus();
-        this.message = exception.getMessage();
+        this.message = exception.getErrorMessage();
         this.className = exception.getClass().getSimpleName();
     }
 
