@@ -24,6 +24,7 @@ public class AuctionFilter {
     LocalDateTime endDateAfter;
     BigDecimal minPrice;
     BigDecimal maxPrice;
+    String filter;
 
     public Specification<AuctionEntity> buildSpecification() {
         Specification<AuctionEntity> spec = Specification.where(null);
@@ -54,6 +55,9 @@ public class AuctionFilter {
         }
         if (Objects.nonNull(this.getMaxPrice())) {
             spec = spec.and(AuctionSpecification.hasStartingPriceLessThanOrEqualTo(this.getMaxPrice()));
+        }
+        if (StringUtils.hasLength(this.getFilter())) {
+            spec = spec.and(AuctionSpecification.hasGeneralFilter(this.getFilter()));
         }
         return spec;
     }
