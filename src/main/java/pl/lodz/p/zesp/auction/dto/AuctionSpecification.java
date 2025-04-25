@@ -57,4 +57,14 @@ public class AuctionSpecification {
     public static Specification<AuctionEntity> hasStartingPriceLessThanOrEqualTo(final BigDecimal price) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.lessThanOrEqualTo(root.get("startingPrice"), price);
     }
+
+    public static Specification<AuctionEntity> hasGeneralFilter(String filter) {
+        return (root, query, criteriaBuilder) -> {
+            final var lowerCaseFilter = "%" + filter.toLowerCase() + "%";
+            final var titleLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), lowerCaseFilter);
+            final var descriptionLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), lowerCaseFilter);
+            final var usernameLike = criteriaBuilder.like(criteriaBuilder.lower(root.join("user").get("username")), lowerCaseFilter);
+            return criteriaBuilder.or(titleLike, descriptionLike, usernameLike);
+        };
+    }
 }
