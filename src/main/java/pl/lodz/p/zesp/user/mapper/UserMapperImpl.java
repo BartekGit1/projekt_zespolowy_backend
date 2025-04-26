@@ -25,7 +25,8 @@ class UserMapperImpl implements UserMapper {
         return new UserDataResponseDto(
                 user.getId(),
                 user.getUsername(),
-                user.getRole()
+                user.getRole(),
+                user.getEmail()
         );
     }
 }

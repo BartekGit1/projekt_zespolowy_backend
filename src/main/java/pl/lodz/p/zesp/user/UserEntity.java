@@ -61,4 +61,8 @@ public class UserEntity implements Serializable {
     public Role getRole() {
         return role;
     }
+
+    public String getEmail() {
+        return email;
+    }
 }

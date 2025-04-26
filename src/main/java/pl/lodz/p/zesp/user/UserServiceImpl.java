@@ -16,8 +16,11 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.lodz.p.zesp.user.controller.UserFilter;
 import pl.lodz.p.zesp.user.dto.request.RegisterRequestDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateRoleDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateUserStatusDto;
@@ -291,5 +294,11 @@ public class UserServiceImpl implements UserService {
         UserEntity user = userRepository.findByUsername(username).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND));
 
         return userMapper.toDto(user);
+    }
+
+    @Override
+    public Page<UserDataResponseDto> getUsers(final UserFilter filter, final Pageable pageable) {
+        return userRepository.findAll(filter.buildSpecification(), pageable)
+                .map(userMapper::toDto);
     }
 }
