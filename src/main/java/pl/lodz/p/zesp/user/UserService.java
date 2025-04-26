@@ -1,5 +1,8 @@
 package pl.lodz.p.zesp.user;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import pl.lodz.p.zesp.user.controller.UserFilter;
 import pl.lodz.p.zesp.user.dto.request.RegisterRequestDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateRoleDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateUserStatusDto;
@@ -15,4 +18,6 @@ public interface UserService {
     void updateRole(UpdateRoleDto updateRoleDto, String username);
 
     UserDataResponseDto getUserData(String username);
+
+    Page<UserDataResponseDto> getUsers(UserFilter userFilter, Pageable pageable);
 }
