@@ -54,4 +54,10 @@ class AuctionController {
         auctionService.deleteAuction(auctionId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/histogram")
+    public ResponseEntity<AuctionHistogramResponse> getHistogram(@RequestParam(value = "days", defaultValue = "7") final Long days) {
+        final var response = auctionService.getHistogram(days);
+        return ResponseEntity.ok(response);
+    }
 }
