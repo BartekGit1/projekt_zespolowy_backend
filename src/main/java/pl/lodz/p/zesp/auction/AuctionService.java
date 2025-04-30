@@ -11,8 +11,14 @@ import pl.lodz.p.zesp.bid.BidRepository;
 import pl.lodz.p.zesp.common.util.IdResponse;
 import pl.lodz.p.zesp.common.util.api.exception.ConflictException;
 import pl.lodz.p.zesp.common.util.api.exception.NotFoundException;
+import pl.lodz.p.zesp.user.UserEntity;
+import pl.lodz.p.zesp.user.UserRepository;
+import pl.lodz.p.zesp.watchlist.WatchlistEntity;
+import pl.lodz.p.zesp.watchlist.WatchlistRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +27,8 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
     private final AuctionMapper auctionMapper;
     private final BidRepository bidRepository;
+    private final WatchlistRepository watchlistRepository;
+    private final UserRepository userRepository;
 
     AuctionResponse getAuctionById(final Long id) {
         return auctionRepository.findById(id)
@@ -70,5 +78,27 @@ public class AuctionService {
         final var fromDate = LocalDateTime.now().minusDays(days);
         final var entries = bidRepository.findHistogramFromDate(fromDate);
         return new AuctionHistogramResponse(entries);
+    }
+
+    void toggleTrackingAuction(final Long auctionId, final String username) {
+        Optional<WatchlistEntity> existingItem = watchlistRepository.findByAuction_IdAndUser_username(auctionId, username);
+
+        if (existingItem.isPresent()) {
+            watchlistRepository.delete(existingItem.get());
+        } else {
+            AuctionEntity auction = auctionRepository.findById(auctionId)
+                    .orElseThrow(() -> new NotFoundException("Auction not found"));
+
+            UserEntity user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new NotFoundException("User not found"));
+
+            WatchlistEntity watchlistEntity = new WatchlistEntity(user, auction);
+            watchlistRepository.save(watchlistEntity);
+        }
+    }
+
+    List<AuctionResponse> findAllWatchedAuctionsSingleUser(final String username){
+        return  watchlistRepository.findAllWatchedAuctionsByUser(username).stream()
+                .map(watchlistEntity -> AuctionResponse.of(watchlistEntity.getAuction())).toList();
     }
 }

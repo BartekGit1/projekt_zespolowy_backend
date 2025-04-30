@@ -6,11 +6,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import pl.lodz.p.zesp.auction.dto.AuctionFilter;
 import pl.lodz.p.zesp.auction.dto.AuctionRequest;
 import pl.lodz.p.zesp.auction.dto.AuctionResponse;
 import pl.lodz.p.zesp.common.util.IdResponse;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auctions")
@@ -59,5 +63,20 @@ class AuctionController {
     public ResponseEntity<AuctionHistogramResponse> getHistogram(@RequestParam(value = "days", defaultValue = "7") final Long days) {
         final var response = auctionService.getHistogram(days);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/toggle")
+    public ResponseEntity<Void>  toggleTrackingAuction(@RequestParam Long auctionId, Authentication authentication) {
+        final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
+        auctionService.toggleTrackingAuction(auctionId, username);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/watched")
+    public ResponseEntity<List<AuctionResponse>> getAllAuctionsWatchedBySingleUser(
+            Authentication authentication
+    ) {
+        final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
+        return ResponseEntity.ok(auctionService.findAllWatchedAuctionsSingleUser(username));
     }
 }
