@@ -26,4 +26,12 @@ public class WatchlistEntity {
         this.user = user;
         this.auction = auction;
     }
+
+    public UserEntity getUser() {
+        return user;
+    }
+
+    public AuctionEntity getAuction() {
+        return auction;
+    }
 }
