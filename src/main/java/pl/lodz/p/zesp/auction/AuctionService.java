@@ -97,8 +97,20 @@ public class AuctionService {
         }
     }
 
-    List<AuctionResponse> findAllWatchedAuctionsSingleUser(final String username){
-        return  watchlistRepository.findAllWatchedAuctionsByUser(username).stream()
+    List<AuctionResponse> findAllWatchedAuctionsSingleUser(final String username) {
+        return watchlistRepository.findAllWatchedAuctionsByUser(username).stream()
                 .map(watchlistEntity -> AuctionResponse.of(watchlistEntity.getAuction())).toList();
+    }
+
+    Page<AuctionResponse> findAllMyAuctions(final String username, final Pageable pageable) {
+        return auctionRepository.findAllMyAuctions(username, pageable);
+    }
+
+    Page<AuctionResponse> findAllMyWonAuctions(final String username, final Pageable pageable) {
+        return auctionRepository.findAllMyWonAuctions(username, pageable);
+    }
+
+    Page<AuctionResponse> findAllFinishedAuctions(final Pageable pageable) {
+        return auctionRepository.findAllFinishedAuctions(pageable);
     }
 }
