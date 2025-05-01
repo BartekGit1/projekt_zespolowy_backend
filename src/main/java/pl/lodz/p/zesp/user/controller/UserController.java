@@ -64,7 +64,7 @@ class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(userDataResponseDto);
     }
 
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN','PREMIUM')")
     @GetMapping("/getSelfData")
     ResponseEntity<UserDataResponseDto> getSelfData(Authentication authentication) {
         final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
@@ -73,6 +73,7 @@ class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(userDataResponseDto);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     ResponseEntity<Page<UserDataResponseDto>> getUsers(
             final UserFilter userFilter,

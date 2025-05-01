@@ -20,4 +20,6 @@ public interface UserService {
     UserDataResponseDto getUserData(String username);
 
     Page<UserDataResponseDto> getUsers(UserFilter userFilter, Pageable pageable);
+
+    void updateRolePayment(String username, Role role);
 }

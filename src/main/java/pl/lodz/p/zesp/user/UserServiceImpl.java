@@ -29,17 +29,16 @@ import pl.lodz.p.zesp.user.dto.response.UserDataResponseDto;
 import pl.lodz.p.zesp.user.exception.exceptions.*;
 import pl.lodz.p.zesp.user.mapper.UserMapper;
 
-
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.keycloak.events.Errors.*;
+import static org.keycloak.events.Errors.USER_NOT_FOUND;
 import static pl.lodz.p.zesp.user.exception.UserExceptionConstants.*;
 
 @Service
-public class UserServiceImpl implements UserService {
+class UserServiceImpl implements UserService {
 
     private final Validator validator;
 
@@ -214,6 +213,10 @@ public class UserServiceImpl implements UserService {
         LOGGER.log(Level.INFO, "User {0} role is updated to {1}", new Object[]{updateRoleDto.username(), updateRoleDto.role()});
     }
 
+    @Override
+    public void updateRolePayment(String username, Role role) {
+        keycloakUpdateRole(username, role);
+    }
 
     private void keycloakUpdateRole(String username, Role newRole) {
         final Keycloak keycloak = retrieveKeycloak();
