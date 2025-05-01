@@ -12,4 +12,6 @@ public interface WatchlistRepository extends JpaRepository<WatchlistEntity, Long
 
     @Query("SELECT w FROM WatchlistEntity w JOIN FETCH w.user u JOIN FETCH w.auction WHERE u.username=:username")
     List<WatchlistEntity> findAllWatchedAuctionsByUser(@Param(value = "username") String username);
+    @Query("SELECT w FROM WatchlistEntity w JOIN FETCH w.auction a WHERE a.id=:auctionId")
+    List<WatchlistEntity> findByAuction_Id(Long auctionId);
 }

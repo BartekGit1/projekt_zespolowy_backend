@@ -79,4 +79,31 @@ class AuctionController {
         final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
         return ResponseEntity.ok(auctionService.findAllWatchedAuctionsSingleUser(username));
     }
+
+    @GetMapping("/mine")
+    public ResponseEntity<Page<AuctionResponse>> getAllMyAuctions(
+            Authentication authentication,
+            final Pageable pageable
+    ) {
+        final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
+        return ResponseEntity.ok(auctionService.findAllMyAuctions(username, pageable));
+    }
+    @GetMapping("/mine-won")
+    public ResponseEntity<Page<AuctionResponse>> getAllMyWonAuctions(
+            Authentication authentication,
+            final Pageable pageable
+    ) {
+        final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
+        return ResponseEntity.ok(auctionService.findAllMyWonAuctions(username, pageable));
+    }
+
+    @GetMapping("/mine/{auctionId}")
+    public ResponseEntity<AuctionResponse> getMineAuctionById(@PathVariable final Long auctionId) {
+        return ResponseEntity.ok(auctionService.getAuctionById(auctionId));
+    }
+
+    @GetMapping("/finished")
+    public ResponseEntity<Page<AuctionResponse>> getAllFinishedAuctions(final Pageable pageable) {
+        return ResponseEntity.ok(auctionService.findAllFinishedAuctions(pageable));
+    }
 }
