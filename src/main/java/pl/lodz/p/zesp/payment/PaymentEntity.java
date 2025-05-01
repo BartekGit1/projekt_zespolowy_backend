@@ -37,9 +37,22 @@ public class PaymentEntity {
     private LocalDateTime createdAt;
 
     @OneToOne(mappedBy = "payment")
-    private PremiumEntity premium;
-
-    @OneToOne(mappedBy = "payment")
     private AuctionEntity auction;
 
+    public UserEntity getUser() {
+        return user;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public PaymentEntity(UserEntity user, BigDecimal amount) {
+        this.user = user;
+        this.amount = amount;
+    }
 }

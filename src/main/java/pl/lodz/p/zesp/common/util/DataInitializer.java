@@ -12,6 +12,7 @@ import pl.lodz.p.zesp.auction.AuctionRepository;
 import pl.lodz.p.zesp.bid.BidEntity;
 import pl.lodz.p.zesp.bid.BidRepository;
 import pl.lodz.p.zesp.payment.PaymentEntity;
+import pl.lodz.p.zesp.payment.PaymentStatus;
 import pl.lodz.p.zesp.payment.PremiumEntity;
 import pl.lodz.p.zesp.payment.PremiumRepository;
 import pl.lodz.p.zesp.user.AccountStatus;
@@ -89,11 +90,10 @@ public class DataInitializer {
                     final var payment = PaymentEntity.builder()
                             .user(randomUser)
                             .amount(BigDecimal.valueOf(10.00))
-                            .status("COMPLETED")
+                            .status(PaymentStatus.COMPLETED.toString())
                             .createdAt(startDate)
                             .build();
                     final var premium = new PremiumEntity(randomUser, startDate, endDate, payment);
-                    payment.setPremium(premium);
                     premiumSubscriptionsToSave.add(premium);
                 });
 
@@ -185,6 +185,7 @@ public class DataInitializer {
         });
         bidRepository.saveAll(bidsToBeSaved);
     }
+
     private void createAuctionsPayment(List<AuctionEntity> auctions) {
         auctions.stream()
                 .filter(auction -> auction.isFinished() && auction.isPaid() && !auction.getBids().isEmpty())
@@ -194,7 +195,7 @@ public class DataInitializer {
                             .auction(auction)
                             .user(bid.getUser())
                             .amount(bid.getAmount())
-                            .status("COMPLETED")
+                            .status(PaymentStatus.COMPLETED.toString())
                             .createdAt(auction.getEndDate().plusHours(random.nextInt(48) + 1))
                             .build();
                     auction.setPayment(payment);
