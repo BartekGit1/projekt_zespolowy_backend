@@ -39,6 +39,10 @@ public class PaymentEntity {
     @OneToOne(mappedBy = "payment")
     private AuctionEntity auction;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type")
+    private PaymentType type;
+
     public UserEntity getUser() {
         return user;
     }
@@ -51,8 +55,13 @@ public class PaymentEntity {
         return id;
     }
 
-    public PaymentEntity(UserEntity user, BigDecimal amount) {
+    public AuctionEntity getAuction() {
+        return auction;
+    }
+
+    public PaymentEntity(UserEntity user, BigDecimal amount, PaymentType type) {
         this.user = user;
         this.amount = amount;
+        this.type = type;
     }
 }

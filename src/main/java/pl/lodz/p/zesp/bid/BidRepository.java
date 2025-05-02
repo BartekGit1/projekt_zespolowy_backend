@@ -2,9 +2,11 @@ package pl.lodz.p.zesp.bid;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import pl.lodz.p.zesp.auction.AuctionEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface BidRepository extends JpaRepository<BidEntity, Long> {
 
@@ -19,4 +21,6 @@ public interface BidRepository extends JpaRepository<BidEntity, Long> {
     """)
     List<BidHistogramEntry> findHistogramFromDate(LocalDateTime fromDate);
 
+
+    Optional<BidEntity> findFirstByAuctionOrderByBidTimeDesc(AuctionEntity auctionEntity);
 }

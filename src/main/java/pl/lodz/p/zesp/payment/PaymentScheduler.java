@@ -21,4 +21,9 @@ class PaymentScheduler {
     public void changeRole() {
         paymentService.changeRole();
     }
+
+    @Scheduled(fixedRate = 60000)
+    public void verifyAuctionPayments() {
+        paymentService.verifyAuctionPayment();
+    }
 }
