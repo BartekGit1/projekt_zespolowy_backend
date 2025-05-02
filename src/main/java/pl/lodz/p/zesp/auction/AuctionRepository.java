@@ -25,7 +25,8 @@ public interface AuctionRepository extends JpaRepository<AuctionEntity, Long>, J
                        SELECT a FROM AuctionEntity a\s
                           JOIN FETCH a.user u
                           JOIN FETCH a.bids b\s
-                          WHERE  b.user.username = :username\s
+                          WHERE a.finished = true\s
+                          AND b.user.username = :username\s
                           AND b.amount = (SELECT MAX(b2.amount) FROM BidEntity b2 WHERE b2.auction.id = a.id)
             """)
     Page<AuctionResponse> findAllMyWonAuctions(@Param(value = "username") String username,final Pageable pageable);

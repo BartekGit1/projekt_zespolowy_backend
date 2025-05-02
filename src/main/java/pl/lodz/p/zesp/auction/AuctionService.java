@@ -1,5 +1,6 @@
 package pl.lodz.p.zesp.auction;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -69,12 +70,13 @@ public class AuctionService {
         }
     }
 
+    @Transactional
     void deleteAuction(final Long auctionId) {
         AuctionEntity auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NotFoundException("Auction not found"));
         List<WatchlistEntity> watchlistEntity = watchlistRepository.findByAuction_Id(auctionId);
 
-        if(auction.getBids() != null) {
+        if (auction.getBids() != null) {
             for (BidEntity bid : auction.getBids()) {
                 bidRepository.delete(bid);
             }
@@ -84,7 +86,7 @@ public class AuctionService {
             paymentRepository.delete(auction.getPayment());
         }
 
-        if(!Objects.isNull(watchlistEntity)){
+        if (!Objects.isNull(watchlistEntity)) {
             watchlistEntity.forEach(watchlistRepository::delete);
         }
 
