@@ -1,9 +1,9 @@
 package pl.lodz.p.zesp.common.util;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.datafaker.Faker;
-import jakarta.annotation.PostConstruct;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,10 +11,7 @@ import pl.lodz.p.zesp.auction.AuctionEntity;
 import pl.lodz.p.zesp.auction.AuctionRepository;
 import pl.lodz.p.zesp.bid.BidEntity;
 import pl.lodz.p.zesp.bid.BidRepository;
-import pl.lodz.p.zesp.payment.PaymentEntity;
-import pl.lodz.p.zesp.payment.PaymentStatus;
-import pl.lodz.p.zesp.payment.PremiumEntity;
-import pl.lodz.p.zesp.payment.PremiumRepository;
+import pl.lodz.p.zesp.payment.*;
 import pl.lodz.p.zesp.user.AccountStatus;
 import pl.lodz.p.zesp.user.Role;
 import pl.lodz.p.zesp.user.UserEntity;
@@ -27,7 +24,10 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -92,6 +92,7 @@ public class DataInitializer {
                             .amount(BigDecimal.valueOf(10.00))
                             .status(PaymentStatus.COMPLETED.toString())
                             .createdAt(startDate)
+                            .type(PaymentType.PREMIUM)
                             .build();
                     final var premium = new PremiumEntity(randomUser, startDate, endDate, payment);
                     premiumSubscriptionsToSave.add(premium);
@@ -197,6 +198,7 @@ public class DataInitializer {
                             .amount(bid.getAmount())
                             .status(PaymentStatus.COMPLETED.toString())
                             .createdAt(auction.getEndDate().plusHours(random.nextInt(48) + 1))
+                            .type(PaymentType.AUCTION)
                             .build();
                     auction.setPayment(payment);
                 });

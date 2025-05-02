@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
-    Optional<PaymentEntity> findFirstByUserAndStatusOrderByCreatedAtDesc(UserEntity user, String status);
+    Optional<PaymentEntity> findFirstByUserAndStatusAndTypeOrderByCreatedAtDesc(UserEntity user, String status, PaymentType type);
 
-    List<PaymentEntity> findAllByStatus(String status);
+    List<PaymentEntity> findAllByStatusAndType(String status, PaymentType type);
 }

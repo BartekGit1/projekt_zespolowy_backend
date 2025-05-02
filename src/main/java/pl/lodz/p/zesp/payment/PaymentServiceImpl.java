@@ -1,6 +1,5 @@
 package pl.lodz.p.zesp.payment;
 
-
 import com.google.gson.Gson;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -11,6 +10,10 @@ import com.stripe.param.PaymentIntentSearchParams;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.lodz.p.zesp.auction.AuctionEntity;
+import pl.lodz.p.zesp.auction.AuctionRepository;
+import pl.lodz.p.zesp.bid.BidEntity;
+import pl.lodz.p.zesp.bid.BidRepository;
 import pl.lodz.p.zesp.common.util.api.exception.CustomException;
 import pl.lodz.p.zesp.payment.dto.response.ClientSecretResponseDto;
 import pl.lodz.p.zesp.user.Role;
@@ -23,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,109 +39,158 @@ class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PremiumRepository premiumRepository;
     private final UserService userService;
+    private final AuctionRepository auctionRepository;
+    private final BidRepository bidRepository;
 
     @Value("${stripe.apikey}")
     private String stripeApiKey;
 
     protected static final Logger LOGGER = Logger.getGlobal();
 
-    public PaymentServiceImpl(UserRepository userRepository, PaymentRepository paymentRepository, PremiumRepository premiumRepository, UserService userService) {
+    public PaymentServiceImpl(UserRepository userRepository, PaymentRepository paymentRepository,
+                              PremiumRepository premiumRepository, UserService userService,
+                              AuctionRepository auctionRepository, BidRepository bidRepository) {
         this.userRepository = userRepository;
         this.paymentRepository = paymentRepository;
         this.premiumRepository = premiumRepository;
         this.userService = userService;
+        this.auctionRepository = auctionRepository;
+        this.bidRepository = bidRepository;
     }
 
     @Transactional
     @Override
     public String initPayment(String username) {
-        Stripe.apiKey = stripeApiKey;
-
-        final UserEntity user = findUser(username);
-        final Optional<PaymentEntity> existingPayment = paymentRepository
-                .findFirstByUserAndStatusOrderByCreatedAtDesc(user, PaymentStatus.IN_PROGRESS.toString());
-
-        if (existingPayment.isPresent()) {
-            return searchForPayment(STRIPE_REQUIRES_PAYMENT_STATUS, existingPayment.get().getId())
-                    .getData()
-                    .stream()
-                    .findFirst()
-                    .map(paymentIntent -> new Gson().toJson(new ClientSecretResponseDto(paymentIntent.getClientSecret())))
-                    .orElseGet(() -> createPayment(user));
-        } else {
-            return createPayment(user);
-        }
+        return handleInitPayment(
+                username,
+                PaymentType.PREMIUM,
+                null,
+                id -> createPaymentIntentParams(findUser(username), id, BigDecimal.valueOf(PREMIUM_CUSTOMER_PRICE), "paymentId")
+        );
     }
 
-    private String createPayment(UserEntity user) {
-        PaymentEntity paymentEntity = new PaymentEntity(user, BigDecimal.valueOf(PREMIUM_CUSTOMER_PRICE));
-        paymentRepository.save(paymentEntity);
+    @Transactional
+    @Override
+    public String initAuctionPayment(Long auctionId, String username) {
+        AuctionEntity auction = auctionRepository.findById(auctionId)
+                .filter(AuctionEntity::isFinished)
+                .orElse(null);
 
-        final PaymentIntentCreateParams params = preparePaymentIntentParams(user, paymentEntity.getId());
+        if (auction == null) {
+            return "";
+        }
+
+        BigDecimal amount = bidRepository.findFirstByAuctionOrderByBidTimeDesc(auction)
+                .map(BidEntity::getAmount)
+                .orElseThrow(() -> new CustomException("No bids found for auction"));
+
+        return handleInitPayment(
+                username,
+                PaymentType.AUCTION,
+                auction,
+                id -> createPaymentIntentParams(findUser(username), auction.getId(), amount, "auctionId")
+        );
+    }
+
+    private String handleInitPayment(String username, PaymentType type, AuctionEntity auction, Function<Long, PaymentIntentCreateParams> paramProvider) {
+        Stripe.apiKey = stripeApiKey;
+        UserEntity user = findUser(username);
+
+        Optional<PaymentEntity> existing = paymentRepository
+                .findFirstByUserAndStatusAndTypeOrderByCreatedAtDesc(user, PaymentStatus.IN_PROGRESS.toString(), type);
+
+        return existing.map(payment ->
+                searchForPayment(STRIPE_REQUIRES_PAYMENT_STATUS, payment.getId(), type)
+                        .getData().stream().findFirst()
+                        .map(intent -> new Gson().toJson(new ClientSecretResponseDto(intent.getClientSecret())))
+                        .orElseGet(() -> createAndReturnClientSecret(user, type, auction, paramProvider))
+        ).orElseGet(() -> createAndReturnClientSecret(user, type, auction, paramProvider));
+    }
+
+    private String createAndReturnClientSecret(UserEntity user, PaymentType type, AuctionEntity auction, Function<Long, PaymentIntentCreateParams> paramProvider) {
+        BigDecimal amount = (type == PaymentType.PREMIUM) ? BigDecimal.valueOf(PREMIUM_CUSTOMER_PRICE) :
+                bidRepository.findFirstByAuctionOrderByBidTimeDesc(auction).map(BidEntity::getAmount)
+                        .orElseThrow(() -> new CustomException("No bid found"));
+
+        PaymentEntity payment = new PaymentEntity(user, amount, type);
+        paymentRepository.save(payment);
+
+        if (type == PaymentType.AUCTION && auction != null) {
+            auction.setPayment(payment);
+            auctionRepository.save(auction);
+        }
+
         try {
-            final PaymentIntent paymentIntent = PaymentIntent.create(params);
-
+            PaymentIntent intent = PaymentIntent.create(paramProvider.apply(payment.getId()));
             LOGGER.log(Level.INFO, "Payment created for user: {0}", user.getUsername());
-            return new Gson().toJson(new ClientSecretResponseDto(paymentIntent.getClientSecret()));
+            return new Gson().toJson(new ClientSecretResponseDto(intent.getClientSecret()));
         } catch (StripeException e) {
             throw new CustomException("Payment error occurred");
         }
     }
 
-    private PaymentIntentCreateParams preparePaymentIntentParams(UserEntity user, Long id) {
-        final Long price = PREMIUM_CUSTOMER_PRICE * STRIPE_MULTIPLIER;
+    private PaymentIntentCreateParams createPaymentIntentParams(UserEntity user, Long id, BigDecimal amount, String metadataKey) {
+        long stripeAmount = amount.multiply(STRIPE_MULTIPLIER).longValue() * 4;
         return PaymentIntentCreateParams.builder()
-                .setAmount(price)
+                .setAmount(stripeAmount)
                 .setCurrency("PLN")
                 .setReceiptEmail(user.getEmail())
                 .setAutomaticPaymentMethods(PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build())
-                .putMetadata("paymentId", id.toString())
+                .putMetadata(metadataKey, id.toString())
                 .build();
     }
 
     @Transactional
     @Override
     public void verifyPayment() {
+        verifyGenericPayments(PaymentType.PREMIUM, 7, (payment, user) -> {
+            final LocalDateTime now = LocalDateTime.now();
+            premiumRepository.save(new PremiumEntity(user, now, now.plusMonths(1), payment));
+            user.setRole(Role.PREMIUM);
+            userRepository.save(user);
+            userService.updateRolePayment(user.getUsername(), Role.PREMIUM);
+            LOGGER.log(Level.INFO, "User {0} upgraded to PREMIUM", user.getUsername());
+        });
+    }
+
+    @Transactional
+    @Override
+    public void verifyAuctionPayment() {
+        verifyGenericPayments(PaymentType.AUCTION, 14, (payment, user) ->
+                auctionRepository.findByPaymentId(payment.getId()).ifPresent(auction -> {
+                    auction.setPaid(true);
+                    auctionRepository.save(auction);
+                    LOGGER.log(Level.INFO, "Confirmed auction for payment: {0}", auction.getId());
+                }));
+    }
+
+    private void verifyGenericPayments(PaymentType type, int expiryDays, PaymentHandler handler) {
         Stripe.apiKey = stripeApiKey;
 
-        List<PaymentEntity> payments = paymentRepository.findAllByStatus(PaymentStatus.IN_PROGRESS.toString());
+        List<PaymentEntity> payments = paymentRepository.findAllByStatusAndType(PaymentStatus.IN_PROGRESS.toString(), type);
 
         for (PaymentEntity payment : payments) {
-            final UserEntity user = payment.getUser();
-
-            boolean isPaid = searchForPayment(STRIPE_PAID_STATUS, payment.getId())
-                    .getData()
-                    .stream()
-                    .findFirst()
-                    .isPresent();
+            UserEntity user = payment.getUser();
+            boolean isPaid = searchForPayment(STRIPE_PAID_STATUS, type == PaymentType.PREMIUM ? payment.getId() :
+                    auctionRepository.findByPaymentId(payment.getId()).map(AuctionEntity::getId).orElse(null), type)
+                    .getData().stream().findFirst().isPresent();
 
             if (isPaid) {
-                LocalDateTime now = LocalDateTime.now();
-                LocalDateTime endDate = now.plusMonths(1);
-
-                PremiumEntity premium = new PremiumEntity(user, now, endDate, payment);
-                premiumRepository.save(premium);
-
-                user.setRole(Role.PREMIUM);
-                userRepository.save(user);
-
                 payment.setStatus(PaymentStatus.COMPLETED.toString());
                 paymentRepository.save(payment);
-
-                userService.updateRolePayment(user.getUsername(), Role.PREMIUM);
-
-                LOGGER.log(Level.INFO, "User {0} upgraded to PREMIUM", user.getUsername());
-            } else if (payment.getCreatedAt().plusDays(7).isBefore(LocalDateTime.now())) {
+                handler.handle(payment, user);
+            } else if (payment.getCreatedAt().plusDays(expiryDays).isBefore(LocalDateTime.now())) {
                 paymentRepository.delete(payment);
-                LOGGER.log(Level.INFO, "Payment expired and removed for user {0}", user.getUsername());
+                LOGGER.log(Level.INFO, "{0} payment expired and removed for user {1}", new Object[]{type, user.getUsername()});
             }
         }
     }
 
-    private PaymentIntentSearchResult searchForPayment(String status, Long id) {
+    private PaymentIntentSearchResult searchForPayment(String status, Long id, PaymentType type) {
         try {
+            String metadataKey = (type == PaymentType.PREMIUM) ? "paymentId" : "auctionId";
             PaymentIntentSearchParams params = PaymentIntentSearchParams.builder()
-                    .setQuery("status:'" + status + "' AND metadata['paymentId']:'" + id + "'")
+                    .setQuery("status:'" + status + "' AND metadata['" + metadataKey + "']:'" + id + "'")
                     .build();
             return PaymentIntent.search(params);
         } catch (StripeException e) {
@@ -152,18 +205,19 @@ class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     public void changeRole() {
-        final List<UserEntity> userEntityList = userRepository.findAllByRole(Role.PREMIUM);
-        for (UserEntity user : userEntityList) {
-            Optional<PremiumEntity> latestPremium = premiumRepository
-                    .findTopByUserOrderByEndDateDesc(user);
+        userRepository.findAllByRole(Role.PREMIUM).forEach(user ->
+                premiumRepository.findTopByUserOrderByEndDateDesc(user)
+                        .filter(premium -> premium.getEndDate().isBefore(LocalDateTime.now()))
+                        .ifPresent(premium -> {
+                            user.setRole(Role.CUSTOMER);
+                            userRepository.save(user);
+                            userService.updateRolePayment(user.getUsername(), Role.CUSTOMER);
+                            LOGGER.log(Level.INFO, "User {0} role changed to CUSTOMER", user.getUsername());
+                        })
+        );
+    }
 
-            if (latestPremium.isPresent() && latestPremium.get().getEndDate().isBefore(LocalDateTime.now())) {
-                user.setRole(Role.CUSTOMER);
-                userRepository.save(user);
-                userService.updateRolePayment(user.getUsername(), Role.CUSTOMER);
-
-                LOGGER.log(Level.INFO, "User {0} role changed to CUSTOMER", user.getUsername());
-            }
-        }
+    private interface PaymentHandler {
+        void handle(PaymentEntity payment, UserEntity user);
     }
 }
