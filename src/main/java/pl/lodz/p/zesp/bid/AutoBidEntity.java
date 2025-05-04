@@ -30,5 +30,43 @@ public class AutoBidEntity {
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    private boolean active;
+    private boolean active = true;
+
+    public UserEntity getUser() {
+        return user;
+    }
+
+    public BigDecimal getMaxAmount() {
+        return maxAmount;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setMaxAmount(BigDecimal maxAmount) {
+        this.maxAmount = maxAmount;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public AutoBidEntity() {
+    }
+
+    public AutoBidEntity(UserEntity user, AuctionEntity auction, BigDecimal maxAmount, LocalDateTime createdAt) {
+        this.user = user;
+        this.auction = auction;
+        this.maxAmount = maxAmount;
+        this.createdAt = createdAt;
+    }
 }

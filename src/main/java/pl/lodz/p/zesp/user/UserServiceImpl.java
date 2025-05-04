@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.lodz.p.zesp.common.util.api.exception.NotFoundException;
 import pl.lodz.p.zesp.user.controller.UserFilter;
 import pl.lodz.p.zesp.user.dto.request.RegisterRequestDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateRoleDto;
@@ -303,5 +304,11 @@ class UserServiceImpl implements UserService {
     public Page<UserDataResponseDto> getUsers(final UserFilter filter, final Pageable pageable) {
         return userRepository.findAll(filter.buildSpecification(), pageable)
                 .map(userMapper::toDto);
+    }
+
+    @Override
+    public UserEntity getUserEntity(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 }

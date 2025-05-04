@@ -11,7 +11,7 @@ public class Constants {
     public static final Long PREMIUM_CUSTOMER_PRICE = 10L;
     public static final String STRIPE_REQUIRES_PAYMENT_STATUS = "requires_payment_method";
     public static final String STRIPE_PAID_STATUS = "Succeeded";
-
+    public static final BigDecimal BID_LIMIT = new BigDecimal("99999999.99");
     private Constants() {
     }
 }
