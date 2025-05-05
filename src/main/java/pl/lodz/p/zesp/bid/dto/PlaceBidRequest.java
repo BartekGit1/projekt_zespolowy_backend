@@ -8,6 +8,8 @@ public record PlaceBidRequest(
         @NotNull
         Long auctionId,
         @NotNull
-        BigDecimal amount
+        BigDecimal amount,
+        @NotNull
+        boolean autoBid
 ) {
 }

@@ -34,4 +34,11 @@ public class BidEntity {
 
     @Column(name = "bid_time", nullable = false)
     private LocalDateTime bidTime;
+
+    public BidEntity(AuctionEntity auction, UserEntity user, BigDecimal amount, LocalDateTime bidTime) {
+        this.auction = auction;
+        this.user = user;
+        this.amount = amount;
+        this.bidTime = bidTime;
+    }
 }

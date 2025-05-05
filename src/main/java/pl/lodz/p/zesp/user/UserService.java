@@ -22,4 +22,6 @@ public interface UserService {
     Page<UserDataResponseDto> getUsers(UserFilter userFilter, Pageable pageable);
 
     void updateRolePayment(String username, Role role);
+
+    UserEntity getUserEntity(String username);
 }
