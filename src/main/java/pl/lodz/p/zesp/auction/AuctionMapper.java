@@ -16,6 +16,7 @@ public class AuctionMapper {
         auction.setStartingPrice(request.startingPrice());
         auction.setEndDate(request.endDate());
         auction.setPromoted(request.isPromoted());
+        auction.setUri(request.uri());
 
         final var user = new UserEntity();
         user.setId(request.userId());
@@ -30,6 +31,7 @@ public class AuctionMapper {
         Optional.ofNullable(request.startingPrice()).ifPresent(auction::setStartingPrice);
         Optional.ofNullable(request.endDate()).ifPresent(auction::setEndDate);
         Optional.ofNullable(request.isPromoted()).ifPresent(auction::setPromoted);
+        Optional.ofNullable(request.uri()).ifPresent(auction::setUri);
         return auction;
     }
 }
