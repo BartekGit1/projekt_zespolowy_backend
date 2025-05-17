@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import pl.lodz.p.zesp.user.UserService;
 import pl.lodz.p.zesp.user.dto.request.RegisterRequestDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateRoleDto;
+import pl.lodz.p.zesp.user.dto.request.UpdateUserDataDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateUserStatusDto;
+import pl.lodz.p.zesp.user.dto.response.ProfileDataResponseDto;
 import pl.lodz.p.zesp.user.dto.response.RegisterResponseDto;
 import pl.lodz.p.zesp.user.dto.response.UserDataResponseDto;
 
@@ -37,7 +39,7 @@ class UserController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping
+    @PatchMapping("/update-status")
     public ResponseEntity<Void> updateStatus(@Valid @RequestBody UpdateUserStatusDto updateUserStatusDto, Authentication authentication) {
         final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
 
@@ -81,4 +83,27 @@ class UserController {
     ) {
         return ResponseEntity.ok(userService.getUsers(userFilter, pageable));
     }
+
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'PREMIUM')")
+    @GetMapping("/profileData/{username}")
+    public ResponseEntity<ProfileDataResponseDto> getProfileData(@PathVariable String username) {
+         return ResponseEntity.ok( userService.getProfileData(username));
+    }
+
+
+
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'PREMIUM')")
+    @PatchMapping("/update-data")
+    public ResponseEntity<Void> updateUserData(@Valid @RequestBody UpdateUserDataDto updateUserDataDto, Authentication authentication) {
+        final String username = ((Jwt) authentication.getPrincipal()).getClaimAsString("preferred_username");
+
+        userService.updateUserData(updateUserDataDto, username);
+
+        return ResponseEntity.noContent().build();
+    }
+
+
+
+
+
 }

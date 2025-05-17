@@ -18,13 +18,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import pl.lodz.p.zesp.common.util.api.exception.NotFoundException;
 import pl.lodz.p.zesp.user.controller.UserFilter;
 import pl.lodz.p.zesp.user.dto.request.RegisterRequestDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateRoleDto;
+import pl.lodz.p.zesp.user.dto.request.UpdateUserDataDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateUserStatusDto;
+import pl.lodz.p.zesp.user.dto.response.ProfileDataResponseDto;
 import pl.lodz.p.zesp.user.dto.response.RegisterResponseDto;
 import pl.lodz.p.zesp.user.dto.response.UserDataResponseDto;
 import pl.lodz.p.zesp.user.exception.exceptions.*;
@@ -32,6 +36,7 @@ import pl.lodz.p.zesp.user.mapper.UserMapper;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -311,4 +316,113 @@ class UserServiceImpl implements UserService {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
+
+    @Override
+    public ProfileDataResponseDto getProfileData(String username) {
+        UserEntity userEntity = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        final Keycloak keycloak = retrieveKeycloak();
+        final RealmResource realmResource = keycloak.realm(realm);
+        final UsersResource usersResource = realmResource.users();
+
+        // Find the user by username
+        final List<UserRepresentation> userRepresentations = usersResource
+                .search(username)
+                .stream()
+                .filter(user -> user.getUsername().equals(username))
+                .toList();
+
+        if (userRepresentations.isEmpty()) {
+            LOGGER.log(Level.WARNING, "Specified user does not exist: {0}", username);
+            throw new NotFoundException("User not found");
+        }
+
+        final UserRepresentation user = userRepresentations.get(0);
+
+        return new ProfileDataResponseDto(
+                userEntity.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                userEntity.getEmail(),
+                userEntity.getUsername(),
+                userEntity.getRole(),
+                userEntity.getAccountStatus()
+        );
+    }
+
+    @Override
+    @Transactional
+    public void updateUserData(UpdateUserDataDto updateDto, String currentUsername) {
+        UserEntity userEntity = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND));
+
+        String newEmail = updateDto.email();
+        String newFirstname = updateDto.firstname();
+        String newLastname = updateDto.lastname();
+
+        if (userEntity.getUsername().equals("johndoe")) {
+            LOGGER.log(Level.WARNING, "User johndoe attempted to update email or profile data");
+            throw new RuntimeException("Cannot update data for johndoe");
+        }
+
+        if (userEntity.getEmail().equals(newEmail)) {
+            LOGGER.log(Level.INFO, "No email change detected for user {0}. Skipping DB update.", currentUsername);
+        } else {
+            userRepository.findByEmail(newEmail)
+                    .filter(u -> !u.getUsername().equals(currentUsername))
+                    .ifPresent(u -> {
+                        LOGGER.log(Level.WARNING, "Email {0} already exists", newEmail);
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+                    });
+
+            userEntity.setEmail(newEmail);
+            userRepository.save(userEntity);
+            LOGGER.log(Level.INFO, "Email updated for user {0} to {1}", new Object[]{currentUsername, newEmail});
+        }
+
+        Keycloak keycloak = retrieveKeycloak();
+        RealmResource realmResource = keycloak.realm(realm);
+        UsersResource usersResource = realmResource.users();
+
+        List<UserRepresentation> userReps = usersResource
+                .search(currentUsername)
+                .stream()
+                .filter(u -> u.getUsername().equals(currentUsername))
+                .toList();
+
+        if (userReps.isEmpty()) {
+            LOGGER.log(Level.WARNING, "User not found in Keycloak: {0}", currentUsername);
+            throw new UserNotFoundException(USER_NOTFOUND_EXCEPTION);
+        }
+
+        UserRepresentation userRep = userReps.get(0);
+
+        boolean updateKeycloak = false;
+
+        if (!userRep.getEmail().equals(newEmail)) {
+            userRep.setEmail(newEmail);
+            updateKeycloak = true;
+        }
+
+        if (!Objects.equals(userRep.getFirstName(), newFirstname)) {
+            userRep.setFirstName(newFirstname);
+            updateKeycloak = true;
+        }
+
+        if (!Objects.equals(userRep.getLastName(), newLastname)) {
+            userRep.setLastName(newLastname);
+            updateKeycloak = true;
+        }
+
+        if (updateKeycloak) {
+            usersResource.get(userRep.getId()).update(userRep);
+            LOGGER.log(Level.INFO, "Updated Keycloak user {0}: email={1}, firstname={2}, lastname={3}",
+                    new Object[]{currentUsername, newEmail, newFirstname, newLastname});
+        } else {
+            LOGGER.log(Level.INFO, "No changes in Keycloak for user {0}", currentUsername);
+        }
+    }
+
+
 }

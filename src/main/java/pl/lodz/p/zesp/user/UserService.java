@@ -5,7 +5,9 @@ import org.springframework.data.domain.Pageable;
 import pl.lodz.p.zesp.user.controller.UserFilter;
 import pl.lodz.p.zesp.user.dto.request.RegisterRequestDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateRoleDto;
+import pl.lodz.p.zesp.user.dto.request.UpdateUserDataDto;
 import pl.lodz.p.zesp.user.dto.request.UpdateUserStatusDto;
+import pl.lodz.p.zesp.user.dto.response.ProfileDataResponseDto;
 import pl.lodz.p.zesp.user.dto.response.RegisterResponseDto;
 import pl.lodz.p.zesp.user.dto.response.UserDataResponseDto;
 
@@ -24,4 +26,9 @@ public interface UserService {
     void updateRolePayment(String username, Role role);
 
     UserEntity getUserEntity(String username);
+
+    ProfileDataResponseDto getProfileData(String username);
+
+    void updateUserData(UpdateUserDataDto updateDto, String currentUsername);
+
 }
